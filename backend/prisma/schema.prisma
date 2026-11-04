@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  firstName String?  @map("first_name")
+  lastName  String?  @map("last_name")
+  isActive  Boolean  @default(true) @map("is_active")
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+  portfolios  Portfolio[]
+  watchlistItems  WatchlistItem[]
+
+  @@map("users")
+}
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique @map("token_hash")
+  userId    Int       @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+model Portfolio {
+  id        Int      @id @default(autoincrement())
+  userId  Int  @map("user_id")
+  user  User  @relation(fields: [userId], references: [id])
+  name  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  transactions  Transaction[]
+
+  @@map("portfolios")
+}
+model Stock {
+  id        Int      @id @default(autoincrement())
+  ticker  String
+  companyName  String  @map("company_name")
+  sector  String
+  currentPrice  Decimal  @map("current_price") @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  transactions  Transaction[]
+  watchlistItems  WatchlistItem[]
+
+  @@map("stocks")
+}
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  portfolioId  Int  @map("portfolio_id")
+  portfolio  Portfolio  @relation(fields: [portfolioId], references: [id])
+  stockId  Int  @map("stock_id")
+  stock  Stock  @relation(fields: [stockId], references: [id])
+  transactionType  String  @map("transaction_type")
+  shares  Float
+  pricePerShare  Decimal  @map("price_per_share") @db.Decimal(10, 2)
+  fees  Decimal @db.Decimal(10, 2)
+  transactionDate  DateTime  @map("transaction_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("transactions")
+}
+model WatchlistItem {
+  id        Int      @id @default(autoincrement())
+  userId  Int  @map("user_id")
+  user  User  @relation(fields: [userId], references: [id])
+  stockId  Int  @map("stock_id")
+  stock  Stock  @relation(fields: [stockId], references: [id])
+  targetPrice  Decimal  @map("target_price") @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("watchlistitems")
+}
